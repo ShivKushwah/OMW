@@ -37,7 +37,7 @@ public class MainActivity extends AppCompatActivity implements ConnectionCallbac
     private LocationRequest mLocationRequest;
     private String mLastUpdateTime;
     private String mPlaceName;
-    private LatLng mLatLng;
+    private LatLng mLatLng = new LatLng(1, 1);
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -100,6 +100,8 @@ public class MainActivity extends AppCompatActivity implements ConnectionCallbac
 
     public void mapScreen(View view) {
         Intent intent = new Intent(this, MapsActivity.class);
+        intent.putExtra("MYLAT", mCurrentLocation.getLatitude());
+        intent.putExtra("MYLONG", mCurrentLocation.getLongitude());
         intent.putExtra("LAT", mLatLng.latitude);
         intent.putExtra("LONG", mLatLng.longitude);
         startActivity(intent);
