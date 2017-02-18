@@ -37,7 +37,7 @@ public class MainActivity extends AppCompatActivity implements ConnectionCallbac
     private LocationRequest mLocationRequest;
     private String mLastUpdateTime;
     private String mPlaceName;
-    private LatLng mLatLng = new LatLng(1, 1);
+    private LatLng mLatLng = new LatLng(37.8716, -122.2727);
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

@@ -1,9 +1,10 @@
 package com.example.shiv.omw;
 
 import android.content.Intent;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
-import android.widget.Toast;
+import android.util.Log;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -26,18 +27,22 @@ import java.net.URL;
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
 
     private GoogleMap mMap;
-    private final String key = "&key=AIzaSyDHzqDLw0hzqteXKfCWMFlmQROFW_6X_Yg";
-    private final String website = "https://maps.googleapis.com/maps/api/directions/json?origin=";
+    private String duration;
+    private final String key = "&key=AIzaSyDP59UlozopevJwm3jocD7jK6Yz7dXb4qs";
+    private final String website = "https://maps.googleapis.com/maps/api/distancematrix/json?units=imperial&origins=";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        duration = "";
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
-        Toast.makeText(getApplicationContext(), "" + getDistanceInfo(), Toast.LENGTH_SHORT).show();
+        getDistanceInfo gd = new getDistanceInfo();
+        gd.execute();
+
     }
 
 
@@ -55,79 +60,87 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mMap = googleMap;
 
         Intent intent = getIntent();
-        LatLng loc = new LatLng(intent.getDoubleExtra("LAT", 0), intent.getDoubleExtra("LONG", 0));
+        LatLng loc = new LatLng(intent.getDoubleExtra("MYLAT", 0), intent.getDoubleExtra("MYLONG", 0));
         mMap.addMarker(new MarkerOptions().position(loc).title("Marker at your location"));
         mMap.moveCamera(CameraUpdateFactory.newLatLng(loc));
     }
 
-    private double getDistanceInfo() {
-        HttpURLConnection urlConnection = null;
-        BufferedReader reader = null;
-        String jsonStr = "";
-        double dist = 0.0;
-        try {
-            Intent intent = getIntent();
-            String web = website + intent.getDoubleExtra("MYLAT", 0) + "," + intent.getDoubleExtra("MYLONG", 0) + "&destination = " + intent.getDoubleExtra("LAT", 0) + "," + intent.getDoubleExtra("LONG", 0) + key;
+    private class getDistanceInfo extends AsyncTask<Void, Void, String> {
+        @Override
+        protected String doInBackground(Void... params) {
+            HttpURLConnection urlConnection = null;
+            BufferedReader reader = null;
+            String jsonStr = "";
+            String text = "";
+            try {
+                Intent intent = getIntent();
+                String web = website + intent.getDoubleExtra("MYLAT", 0) + "," + intent.getDoubleExtra("MYLONG", 0) + "&destinations=" + intent.getDoubleExtra("LAT", 0) + "," + intent.getDoubleExtra("LONG", 0) + key;
 
-            URL url = new URL(web);
-            urlConnection = (HttpURLConnection) url.openConnection();
-            urlConnection.setRequestMethod("GET");
+                URL url = new URL(web);
+                urlConnection = (HttpURLConnection) url.openConnection();
+                urlConnection.setRequestMethod("GET");
+                urlConnection.connect();
 
-            InputStream inputStream = urlConnection.getInputStream();
-            StringBuffer buffer = new StringBuffer();
-            if (inputStream == null) {
-                return 0.0;
-            }
-            reader = new BufferedReader(new InputStreamReader(inputStream));
+                InputStream inputStream = urlConnection.getInputStream();
+                StringBuffer buffer = new StringBuffer();
+                if (inputStream == null) {
+                    return "";
+                }
+                reader = new BufferedReader(new InputStreamReader(inputStream));
 
-            String line;
-            while ((line = reader.readLine()) != null) {
-                // Since it's JSON, adding a newline isn't necessary (it won't affect parsing)
-                // But it does make debugging a *lot* easier if you print out the completed
-                // buffer for debugging.
-                buffer.append(line + "\n");
-            }
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    // Since it's JSON, adding a newline isn't necessary (it won't affect parsing)
+                    // But it does make debugging a *lot* easier if you print out the completed
+                    // buffer for debugging.
+                    buffer.append(line + "\n");
+                }
 
-            if (buffer.length() == 0) {
-                // Stream was empty.  No point in parsing.
-                return 0.0;
-            }
-            jsonStr = buffer.toString();
-        } catch (IOException e) {
-            return 0.0;
-        } finally{
-            if (urlConnection != null) {
-                urlConnection.disconnect();
-            }
-            if (reader != null) {
-                try {
-                    reader.close();
-                } catch (final IOException e) {
+                if (buffer.length() == 0) {
+                    // Stream was empty.  No point in parsing.
+                    return "";
+                }
+                jsonStr = buffer.toString();
+            } catch (IOException e) {
+                return "";
+            } finally {
+                if (urlConnection != null) {
+                    urlConnection.disconnect();
+                }
+                if (reader != null) {
+                    try {
+                        reader.close();
+                    } catch (final IOException e) {
+                    }
                 }
             }
+            JSONObject jsonObject = new JSONObject();
+            try {
+
+                jsonObject = new JSONObject(jsonStr);
+                JSONArray array = jsonObject.getJSONArray("rows");
+
+                JSONObject rows = array.getJSONObject(0);
+
+                JSONArray elements = rows.getJSONArray("elements");
+
+                JSONObject duration = elements.getJSONObject(0);
+
+                JSONObject value = duration.getJSONObject("duration");
+
+                text = value.getString("text");
+
+            } catch (JSONException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+            return text;
         }
-        JSONObject jsonObject = new JSONObject();
-        try {
 
-            jsonObject = new JSONObject(jsonStr);
-
-            JSONArray array = jsonObject.getJSONArray("routes");
-
-            JSONObject routes = array.getJSONObject(0);
-
-            JSONArray legs = routes.getJSONArray("legs");
-
-            JSONObject steps = legs.getJSONObject(0);
-
-            JSONObject distance = steps.getJSONObject("distance");
-
-            dist = Double.parseDouble(distance.getString("text").replaceAll("[^\\.0123456789]","") );
-
-        } catch (JSONException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+        @Override
+        protected void onPostExecute(String result) {
+            duration = result;
+            Log.e("lol", duration);
         }
-
-        return dist;
     }
 }
