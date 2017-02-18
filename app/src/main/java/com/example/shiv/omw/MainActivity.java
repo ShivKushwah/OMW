@@ -11,6 +11,7 @@ import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.telephony.SmsManager;
 import android.view.View;
+import android.widget.EditText;
 import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -30,8 +31,9 @@ import java.text.DateFormat;
 import java.util.Date;
 
 public class MainActivity extends AppCompatActivity implements ConnectionCallbacks, OnConnectionFailedListener, LocationListener, PlaceSelectionListener {
-    private static final int MY_PERMISSIONS_REQUEST_SEND_SMS = 0 ;
-    private static final int MY_PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION = 1;
+    private static final int MY_PERMISSIONS_REQUEST_SEND_SMS = 1 ;
+    private static final int MY_PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION = 2;
+    private static final int MY_PERMISSIONS_REQUEST_READ_CONTACTS = 3;
     private GoogleApiClient mGoogleApiClient;
     private Location mCurrentLocation;
     private LocationRequest mLocationRequest;
@@ -48,6 +50,12 @@ public class MainActivity extends AppCompatActivity implements ConnectionCallbac
                     .addOnConnectionFailedListener(this)
                     .addApi(LocationServices.API)
                     .build();
+        }
+        if (ContextCompat.checkSelfPermission(this,
+                Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.READ_CONTACTS},
+                    MY_PERMISSIONS_REQUEST_READ_CONTACTS);
         }
         setContentView(R.layout.activity_main);
         PlaceAutocompleteFragment autocompleteFragment = (PlaceAutocompleteFragment)
@@ -99,11 +107,18 @@ public class MainActivity extends AppCompatActivity implements ConnectionCallbac
     }
 
     public void mapScreen(View view) {
+        String phoneNum = ((EditText) findViewById(R.id.edit_message)).getText().toString();
+        if(phoneNum.length() < 10) {
+            Toast.makeText(getApplicationContext(),
+                    "Please enter a valid phone number.", Toast.LENGTH_LONG).show();
+            return;
+        }
         Intent intent = new Intent(this, MapsActivity.class);
         intent.putExtra("MYLAT", mCurrentLocation.getLatitude());
         intent.putExtra("MYLONG", mCurrentLocation.getLongitude());
         intent.putExtra("LAT", mLatLng.latitude);
         intent.putExtra("LONG", mLatLng.longitude);
+        intent.putExtra("PHONENUM", phoneNum);
         startActivity(intent);
     }
 

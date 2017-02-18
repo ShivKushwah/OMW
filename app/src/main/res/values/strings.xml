@@ -2,7 +2,8 @@
     <string name="app_name">OMW</string>
     <string name="button_send">Send</string>
     <string name="message1">Im</string>
-    <string name="message2">minutes away! Hang on!</string>
+    <string name="message2">away! Hang on!</string>
     <string name="title_activity_maps">Map</string>
     <string name="text_map">Go to map</string>
+    <string name="edit_message">Enter phone number</string>
 </resources>
