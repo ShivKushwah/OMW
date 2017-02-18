@@ -1,1 +1,6 @@
 /build
+OMW.iml
+/.idea
+/.gradle
+/app/app.iml
+local.properties
